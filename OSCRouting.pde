@@ -16,6 +16,9 @@ NetAddress myRemoteLocation;
 int portNum = 12000;
 String hostAddress = "192.168.0.101";
 
+ArrayList <String> displayValues = new ArrayList<String>();
+final int maxDisplay = 30;
+
 void setup() {
   size(400,400);
   printArray(Serial.list());
@@ -39,10 +42,26 @@ void draw() {
       print(myString);  // Prints String
       float num=float(myString);  // Converts and prints float
       sendVal(num);
+      displayValues.add( myString );
       //println(num);
     }
   }
   serialPort.clear();
+  
+  while( displayValues.size() > maxDisplay )
+  {
+     displayValues.remove(0); 
+  }
+  
+  pushMatrix();
+  fill( 255);
+  for( String s : displayValues )
+  {
+     text( s, 10, 10);
+     translate( 0, 10);
+  }
+  popMatrix();
+  
 }
 
 void sendVal( float v )

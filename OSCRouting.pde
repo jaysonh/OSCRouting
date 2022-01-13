@@ -8,45 +8,63 @@ import oscP5.*;
 import netP5.*;
 import processing.serial.*;
 
+boolean FAKE_DATA = true;
+
 Serial serialPort;
   int lf = 10;
 OscP5 oscP5;
 NetAddress myRemoteLocation;
-
+float t= 0.0;
 int portNum = 12000;
-String hostAddress = "192.168.0.101";
+String phoneAddress = "192.168.0.100"; // this is the ip adresss of the phone running the ar face mask app "192.168.1.243"
 
 ArrayList <String> displayValues = new ArrayList<String>();
 final int maxDisplay = 30;
 
 void setup() {
   size(400,400);
-  printArray(Serial.list());
-  serialPort = new Serial(this, "COM12", 115200 );
+  
+  if(!FAKE_DATA)
+  {
+    printArray(Serial.list());
+    serialPort = new Serial(this, "COM12", 115200 );
+  }
   frameRate(25);
   /* start oscP5, listening for incoming messages at port 12000 */
   oscP5 = new OscP5( this, portNum );
   
-  myRemoteLocation = new NetAddress( hostAddress, 12000 );
+  myRemoteLocation = new NetAddress( phoneAddress, 12000 );
 }
 
 
 void draw() {
   background(0);  
   
-  while (serialPort.available() > 0) 
+  if(!FAKE_DATA)
   {
-    String myString = serialPort.readStringUntil(lf);
-    if (myString != null) 
-    {
-      print(myString);  // Prints String
-      float num=float(myString);  // Converts and prints float
-      sendVal(num);
-      displayValues.add( myString );
-      //println(num);
-    }
+      while (serialPort.available() > 0) 
+      {
+        String myString = serialPort.readStringUntil(lf);
+        if (myString != null) 
+        {
+          print(myString);  // Prints String
+          float num=float(myString);  // Converts and prints float
+          sendVal(num);
+          displayValues.add( myString );
+          //println(num);
+        }
+      }
+      serialPort.clear();
   }
-  serialPort.clear();
+  
+  if(FAKE_DATA)
+  {
+       //float num = noise( t );
+       //t+= 0.05;
+       float num = map( mouseX, 0, width, 0.0, 1.0 );
+       sendVal(num);
+       displayValues.add( "value: " + num );
+  }
   
   while( displayValues.size() > maxDisplay )
   {

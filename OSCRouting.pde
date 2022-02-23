@@ -7,96 +7,197 @@
 import oscP5.*;
 import netP5.*;
 import processing.serial.*;
+import controlP5.*;
 
-boolean FAKE_DATA = true;
+int OSC_PORT = 12000;
 
+ControlP5 userInterface;
+
+DropdownList particleSpeedList;
+DropdownList faceRippleList;
+DropdownList serialDevList;
+Textlabel    arduinoValLabel;
+Textlabel    mouseValLabel;
+Slider slider1, slider2;
+Button        connectBtn;
+Textfield ipAddrText;
+
+float arduinoInput = 0.0;
+String []serialDevices;
 Serial serialPort;
-  int lf = 10;
 OscP5 oscP5;
 NetAddress myRemoteLocation;
-float t= 0.0;
-int portNum = 12000;
-String phoneAddress = "192.168.0.100"; // this is the ip adresss of the phone running the ar face mask app "192.168.1.243"
 
-ArrayList <String> displayValues = new ArrayList<String>();
-final int maxDisplay = 30;
+String tabletIPAddr = "192.168.1.212"; // this is the ip adresss of the phone running the ar face mask app "192.168.1.243"
+boolean serialConnected = false;
 
 void setup() {
   size(400,400);
   
-  if(!FAKE_DATA)
+  userInterface = new ControlP5(this);
+  
+  particleSpeedList = userInterface.addDropdownList("particleSpeed").setPosition(10, 25);
+  particleSpeedList.setBackgroundColor(color(190));
+  particleSpeedList.setItemHeight(20);
+  particleSpeedList.setBarHeight(15);
+  particleSpeedList.getCaptionLabel().set("particleSpeed");
+  particleSpeedList.addItem("mouse",    0);
+  particleSpeedList.addItem("arduino",  1);
+  particleSpeedList.addItem("slider 1",  2);
+  particleSpeedList.addItem("slider 2",  3);
+    
+  
+  faceRippleList = userInterface.addDropdownList("faceRipple").setPosition(10, 160);
+  faceRippleList.setBackgroundColor(color(190));
+  faceRippleList.setItemHeight(20);
+  faceRippleList.setBarHeight(15);
+  faceRippleList.getCaptionLabel().set("faceRipple");
+  faceRippleList.addItem("mouse",    0);
+  faceRippleList.addItem("arduino",  1);
+  faceRippleList.addItem("slider 1",  2);
+  faceRippleList.addItem("slider 2",  3);
+   
+  
+  serialDevices = Serial.list();
+  serialDevList = userInterface.addDropdownList("Serial Devices").setPosition(width-150, 220);
+  serialDevList.setBackgroundColor(color(190));
+  serialDevList.setItemHeight(20);
+  serialDevList.setBarHeight(15);
+  serialDevList.getCaptionLabel().set("Serial Devices");  
+  for(int i =0; i < serialDevices.length;i++)
   {
-    printArray(Serial.list());
-    serialPort = new Serial(this, "COM12", 115200 );
+    serialDevList.addItem(serialDevices[i],  i);    
   }
+  serialDevList.setOpen(false);
+  
+  slider1 = userInterface.addSlider("slider1").setPosition(width-150,110).setRange(0.0, 1.0);
+  slider2 = userInterface.addSlider("slider2").setPosition(width-150,125).setRange(0.0, 1.0);
+  
+  
+  arduinoValLabel = userInterface.addTextlabel("Arduino Value")
+                    .setText("Arduino Val: Not Connected")
+                    .setPosition(width-150,140)
+                    .setColorValue(0xffffffff)
+                    .setFont(createFont("Arial",12))
+                    ;
+                    
+  
+  mouseValLabel = userInterface.addTextlabel("Mouse Value")
+                    .setText("Mouse Value: " + map(mouseX,0,width,0,1))
+                    .setPosition(width-150,155)
+                    .setColorValue(0xffffffff)
+                    .setFont(createFont("Arial",12))
+                    ;
+      
+  ipAddrText = userInterface.addTextfield("tabletIPAddr")
+     .setPosition(width-150,30)
+     .setSize(100,20)
+     .setFocus(true)
+     .setValue(tabletIPAddr)
+     .setColor(color(255,255,255))
+     ;
+   
+  connectBtn = userInterface.addButton("conn")
+     .setValue(100)
+     .setPosition(width-40,30)
+     .setSize(35,25)
+     ;
+         
   frameRate(25);
   /* start oscP5, listening for incoming messages at port 12000 */
-  oscP5 = new OscP5( this, portNum );
+  oscP5 = new OscP5( this, OSC_PORT );
   
-  myRemoteLocation = new NetAddress( phoneAddress, 12000 );
+  connectOSC( tabletIPAddr);
+  
 }
 
 
 void draw() {
   background(0);  
   
-  if(!FAKE_DATA)
+  fill(255);
+  stroke(255);
+  text("PARTICLE SPEED", 10,15);
+  line( 0,20, 200, 20);
+  
+  
+  fill(255);
+  stroke(255);
+  text("TABLET CONNECTION", width-150,15);
+  line( width ,20, width-150, 20);
+  
+  fill(255);
+  stroke(255);
+  text("OSC Output", width-150,85);
+  line( width, 90, width-150, 90);
+  
+  text("FACE RIPPLE", 10,150);
+  line( 0,155, 200, 155);
+  
+  text("SERIAL DEVICES", width-150,200);
+  line( width-150,205, width, 205);
+  
+  
+  mouseValLabel.setValue( "Mouse Val: " + map(mouseX,0,width,0,1));
+  arduinoValLabel.setValue("Arduino Val: " + arduinoInput);
+  
+  // send data based on user interface selection
+  int particleSpeedSel = (int)particleSpeedList.getValue();
+  switch( particleSpeedSel )
+  {
+     case 0: // mouse
+       sendOSCValue("/ParticleSpeed", map(mouseX,0,width,0,1));
+     break;
+     
+     case 1: // arduino
+       sendOSCValue("/ParticleSpeed", arduinoInput);
+     break;
+          
+     case 2: // slider 1
+       sendOSCValue("/ParticleSpeed", slider1.getValue());
+     break;
+     
+     case 3: // slider 2
+       sendOSCValue("/ParticleSpeed", slider2.getValue());
+     break;     
+  }
+  
+  // send data based on user interface selection
+  int rippleSpeedSel = (int)faceRippleList.getValue();
+  switch( rippleSpeedSel )
+  {
+     case 0: // mouse
+       sendOSCValue("/RippleSpeed", map(mouseX,0,width,0,1));
+     break;
+     
+     case 1: // arduino
+       sendOSCValue("/RippleSpeed", arduinoInput);
+     break;
+          
+     case 2: // slider 1
+       sendOSCValue("/RippleSpeed", slider1.getValue());
+     break;
+     
+     case 3: // slider 2
+       sendOSCValue("/RippleSpeed", slider2.getValue());
+     break;     
+  }
+  
+  if(serialConnected)
   {
       while (serialPort.available() > 0) 
       {
+        int lf = 10; // line feed end
         String myString = serialPort.readStringUntil(lf);
         if (myString != null) 
         {
-          print(myString);  // Prints String
-          float num=float(myString);  // Converts and prints float
-          sendVal(num);
-          displayValues.add( myString );
-          //println(num);
+          arduinoInput = float(myString);          
         }
       }
       serialPort.clear();
   }
   
-  if(FAKE_DATA)
-  {
-       //float num = noise( t );
-       //t+= 0.05;
-       float num = map( mouseX, 0, width, 0.0, 1.0 );
-       sendVal(num);
-       displayValues.add( "value: " + num );
-  }
-  
-  while( displayValues.size() > maxDisplay )
-  {
-     displayValues.remove(0); 
-  }
-  
-  pushMatrix();
-  fill( 255);
-  for( String s : displayValues )
-  {
-     text( s, 10, 10);
-     translate( 0, 10);
-  }
-  popMatrix();
-  
-}
-
-void sendVal( float v )
-{
-  OscMessage myMessage = new OscMessage("/test");
-  
-  myMessage.add(v); /* add an int to the osc message */
-
-  /* send the message */
-  oscP5.send(myMessage, myRemoteLocation); 
-}
-
-
-/* incoming osc message are forwarded to the oscEvent method. */
-void oscEvent(OscMessage theOscMessage) {
-  /* print the address pattern and the typetag of the received OscMessage */
-  print("### received an osc message.");
-  print(" addrpattern: "+theOscMessage.addrPattern());
-  println(" typetag: "+theOscMessage.typetag());
+  // Keep the drop down list open
+  particleSpeedList.setOpen(true);
+  faceRippleList.setOpen(true);
 }

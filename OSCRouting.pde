@@ -18,7 +18,6 @@ DropdownList faceRippleList;
 DropdownList serialDevList;
 Textlabel    arduinoValLabel;
 Textlabel    mouseValLabel;
-Slider slider1, slider2;
 Button        connectBtn;
 Textfield ipAddrText;
 
@@ -28,7 +27,7 @@ Serial serialPort;
 OscP5 oscP5;
 NetAddress myRemoteLocation;
 
-String tabletIPAddr = "192.168.1.212"; // this is the ip adresss of the phone running the ar face mask app "192.168.1.243"
+String tabletIPAddr = "192.168.1.212"; // this is the ip adresss of the phone/tablet running the ar face mask app "192.168.1.243"
 boolean serialConnected = false;
 
 void setup() {
@@ -41,22 +40,18 @@ void setup() {
   particleSpeedList.setItemHeight(20);
   particleSpeedList.setBarHeight(15);
   particleSpeedList.getCaptionLabel().set("particleSpeed");
-  particleSpeedList.addItem("mouse",    0);
-  particleSpeedList.addItem("arduino",  1);
-  particleSpeedList.addItem("slider 1",  2);
-  particleSpeedList.addItem("slider 2",  3);
-    
+  particleSpeedList.addItem("arduino",    0);
+  particleSpeedList.addItem("mouse",  1);
+  particleSpeedList.setValue(0);
   
   faceRippleList = userInterface.addDropdownList("faceRipple").setPosition(10, 160);
   faceRippleList.setBackgroundColor(color(190));
   faceRippleList.setItemHeight(20);
   faceRippleList.setBarHeight(15);
   faceRippleList.getCaptionLabel().set("faceRipple");
-  faceRippleList.addItem("mouse",    0);
-  faceRippleList.addItem("arduino",  1);
-  faceRippleList.addItem("slider 1",  2);
-  faceRippleList.addItem("slider 2",  3);
-   
+  faceRippleList.addItem("arduino",    0);
+  faceRippleList.addItem("mouse",  1);  
+  faceRippleList.setValue(0);
   
   serialDevices = Serial.list();
   serialDevList = userInterface.addDropdownList("Serial Devices").setPosition(width-150, 220);
@@ -69,11 +64,7 @@ void setup() {
     serialDevList.addItem(serialDevices[i],  i);    
   }
   serialDevList.setOpen(false);
-  
-  slider1 = userInterface.addSlider("slider1").setPosition(width-150,110).setRange(0.0, 1.0);
-  slider2 = userInterface.addSlider("slider2").setPosition(width-150,125).setRange(0.0, 1.0);
-  
-  
+    
   arduinoValLabel = userInterface.addTextlabel("Arduino Value")
                     .setText("Arduino Val: Not Connected")
                     .setPosition(width-150,140)
@@ -146,20 +137,20 @@ void draw() {
   switch( particleSpeedSel )
   {
      case 0: // mouse
-       sendOSCValue("/ParticleSpeed", map(mouseX,0,width,0,1));
+       sendOSCValue("/ParticleSpeed", arduinoInput);
      break;
      
      case 1: // arduino
-       sendOSCValue("/ParticleSpeed", arduinoInput);
+       sendOSCValue("/ParticleSpeed",map(mouseX,0,width,0,1) );
      break;
           
-     case 2: // slider 1
+     /*case 2: // slider 1
        sendOSCValue("/ParticleSpeed", slider1.getValue());
      break;
      
      case 3: // slider 2
        sendOSCValue("/ParticleSpeed", slider2.getValue());
-     break;     
+     break;  */   
   }
   
   // send data based on user interface selection
@@ -167,20 +158,20 @@ void draw() {
   switch( rippleSpeedSel )
   {
      case 0: // mouse
-       sendOSCValue("/RippleSpeed", map(mouseX,0,width,0,1));
+       sendOSCValue("/RippleSpeed", arduinoInput );
      break;
      
      case 1: // arduino
-       sendOSCValue("/RippleSpeed", arduinoInput);
+       sendOSCValue("/RippleSpeed",map(mouseX,0,width,0,1) );
      break;
           
-     case 2: // slider 1
+    /* case 2: // slider 1
        sendOSCValue("/RippleSpeed", slider1.getValue());
      break;
      
      case 3: // slider 2
        sendOSCValue("/RippleSpeed", slider2.getValue());
-     break;     
+     break;  */   
   }
   
   if(serialConnected)

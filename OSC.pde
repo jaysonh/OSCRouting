@@ -8,6 +8,7 @@ void connectOSC( String ipAddr )
 
 void sendOSCValue( String addr, float v )
 {
+  println("sending: " + addr + "," + v);
   OscMessage myMessage = new OscMessage(addr);
   
   myMessage.add(v); 

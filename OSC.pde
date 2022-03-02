@@ -14,6 +14,8 @@ void sendOSCValue( String addr, float v )
   myMessage.add(v); 
   
   oscP5.send(myMessage, myRemoteLocation); 
+  
+  outputVal = v;
 }
 
 

@@ -14,12 +14,13 @@ int OSC_PORT = 12000;
 ControlP5 userInterface;
 
 DropdownList particleSpeedList;
-DropdownList faceRippleList;
+
 DropdownList serialDevList;
 Textlabel    arduinoValLabel;
-Textlabel    mouseValLabel;
 Button        connectBtn;
 Textfield ipAddrText;
+
+float outputVal = 0.0;
 
 float arduinoInput = 0.0;
 String []serialDevices;
@@ -44,14 +45,6 @@ void setup() {
   particleSpeedList.addItem("mouse",  1);
   particleSpeedList.setValue(0);
   
-  faceRippleList = userInterface.addDropdownList("faceRipple").setPosition(10, 160);
-  faceRippleList.setBackgroundColor(color(190));
-  faceRippleList.setItemHeight(20);
-  faceRippleList.setBarHeight(15);
-  faceRippleList.getCaptionLabel().set("faceRipple");
-  faceRippleList.addItem("arduino",    0);
-  faceRippleList.addItem("mouse",  1);  
-  faceRippleList.setValue(0);
   
   serialDevices = Serial.list();
   serialDevList = userInterface.addDropdownList("Serial Devices").setPosition(width-150, 220);
@@ -67,18 +60,11 @@ void setup() {
     
   arduinoValLabel = userInterface.addTextlabel("Arduino Value")
                     .setText("Arduino Val: Not Connected")
-                    .setPosition(width-150,140)
+                    .setPosition(width-150,110)
                     .setColorValue(0xffffffff)
                     .setFont(createFont("Arial",12))
-                    ;
-                    
+                    ;                   
   
-  mouseValLabel = userInterface.addTextlabel("Mouse Value")
-                    .setText("Mouse Value: " + map(mouseX,0,width,0,1))
-                    .setPosition(width-150,155)
-                    .setColorValue(0xffffffff)
-                    .setFont(createFont("Arial",12))
-                    ;
       
   ipAddrText = userInterface.addTextfield("tabletIPAddr")
      .setPosition(width-150,30)
@@ -108,7 +94,7 @@ void draw() {
   
   fill(255);
   stroke(255);
-  text("PARTICLE SPEED", 10,15);
+  text("OSC OUTPUT", 10,15);
   line( 0,20, 200, 20);
   
   
@@ -121,57 +107,23 @@ void draw() {
   stroke(255);
   text("OSC Output", width-150,85);
   line( width, 90, width-150, 90);
-  
-  text("FACE RIPPLE", 10,150);
-  line( 0,155, 200, 155);
-  
+    
   text("SERIAL DEVICES", width-150,200);
   line( width-150,205, width, 205);
-  
-  
-  mouseValLabel.setValue( "Mouse Val: " + map(mouseX,0,width,0,1));
-  arduinoValLabel.setValue("Arduino Val: " + arduinoInput);
+    
+  arduinoValLabel.setValue("OSC Output: " + outputVal);
   
   // send data based on user interface selection
   int particleSpeedSel = (int)particleSpeedList.getValue();
   switch( particleSpeedSel )
   {
      case 0: // mouse
-       sendOSCValue("/ParticleSpeed", arduinoInput);
+       sendOSCValue("/OSCInput", arduinoInput);
      break;
      
      case 1: // arduino
-       sendOSCValue("/ParticleSpeed",map(mouseX,0,width,0,1) );
-     break;
-          
-     /*case 2: // slider 1
-       sendOSCValue("/ParticleSpeed", slider1.getValue());
-     break;
-     
-     case 3: // slider 2
-       sendOSCValue("/ParticleSpeed", slider2.getValue());
-     break;  */   
-  }
-  
-  // send data based on user interface selection
-  int rippleSpeedSel = (int)faceRippleList.getValue();
-  switch( rippleSpeedSel )
-  {
-     case 0: // mouse
-       sendOSCValue("/RippleSpeed", arduinoInput );
-     break;
-     
-     case 1: // arduino
-       sendOSCValue("/RippleSpeed",map(mouseX,0,width,0,1) );
-     break;
-          
-    /* case 2: // slider 1
-       sendOSCValue("/RippleSpeed", slider1.getValue());
-     break;
-     
-     case 3: // slider 2
-       sendOSCValue("/RippleSpeed", slider2.getValue());
-     break;  */   
+       sendOSCValue("/OSCInput",map(mouseX,0,width,0,1) );
+     break; 
   }
   
   if(serialConnected)
@@ -190,5 +142,4 @@ void draw() {
   
   // Keep the drop down list open
   particleSpeedList.setOpen(true);
-  faceRippleList.setOpen(true);
 }
